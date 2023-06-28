@@ -1,0 +1,71 @@
+
+.\" Manpage for _printf.
+.\" Contact mskander.dridi@gmail.com to correct errors or typos.
+
+.SH NAME
+_printf \- create a new LDAP user 
+    _printf.c , What does printf print to?
+printf (print formatted) in C, writes out a cstring to stdout (standard output). The provided cstring may contain format specifiers( beginning with % in the cstring). If there are format specifiers, those are replaced with their respective arguments that follow the cstring to the printf call.
+
+.SH SYNOPSIS
+
+     int _printf(const char *format, ...);
+Prototype: int _printf(const char *format, ...);
+Returns: the number of characters printed (excluding the null byte used to end output to strings)
+write output to stdout, the standard output stream
+format is a character string. The format string is composed of zero or more directives. See man 3 printf for more detail. You need to handle the following conversion specifiers:
+c
+s
+%
+
+.SH DESCRIPTION
+
+   printf is the C language function to do formatted printing. The same function is also available in
+PERL. This paper explains how printf works, and
+how to design the proper formatting specification for
+any occasion
+
+.SH EXAMPLES
+
+   len = _printf("Let's try to printf a simple sentence.\n");
+    len2 = printf("Let's try to printf a simple sentence.\n");
+    ui = (unsigned int)INT_MAX + 1024;
+    addr = (void *)0x7ffe637541f0;
+    _printf("Length:[%d, %i]\n", len, len);
+    printf("Length:[%d, %i]\n", len2, len2);
+    _printf("Negative:[%d]\n", -762534);
+    printf("Negative:[%d]\n", -762534);
+    _printf("Unsigned:[%u]\n", ui);
+    printf("Unsigned:[%u]\n", ui);
+    _printf("Unsigned octal:[%o]\n", ui);
+    printf("Unsigned octal:[%o]\n", ui);
+    _printf("Unsigned hexadecimal:[%x, %X]\n", ui, ui);
+    printf("Unsigned hexadecimal:[%x, %X]\n", ui, ui);
+    _printf("Character:[%c]\n", 'H');
+    printf("Character:[%c]\n", 'H');
+    _printf("String:[%s]\n", "I am a string !");
+    printf("String:[%s]\n", "I am a string !");
+    _printf("Address:[%p]\n", addr);
+    printf("Address:[%p]\n", addr);
+    len = _printf("Percent:[%%]\n");
+    len2 = printf("Percent:[%%]\n");
+    _printf("Len:[%d]\n", len);
+    printf("Len:[%d]\n", len2);
+    _printf("Unknown:[%r]\n");
+    printf("Unknown:[%r]\n");
+
+.SH SEE ALSO
+
+    A list of related commands or functions.
+.SH BUGS
+
+    List known bugs.
+
+.SH AUTHOR
+
+  This fucntion made by : 
+	Skander Dridi
+
+.SH COPYRIGHT
+
+    All copyright back to ALX.
