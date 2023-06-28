@@ -11,7 +11,7 @@ int _puts(char *str)
 	char *a = str;/*declaration of variables*/
 
 	while (*str)
-		_putchar(*str++);
+		write(*str++);
 	return (str - a);
 }
 
