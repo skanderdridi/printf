@@ -9,7 +9,7 @@ int print_number(int n)
 {int x, k, r = 1, s = 0;
 
 	if (n == 0)
-	{putchar(48);
+	{_putchar(48);
 		s += 1;
 		return (s);
 	}
@@ -19,7 +19,7 @@ int print_number(int n)
 	}
 	if (n < 0)
 	{x = -x;
-		putchar('-');
+		_putchar('-');
 		s += 1;
 	}
 	while (r < 1000000000 && (x - (r * 10) >= 0))
@@ -30,18 +30,18 @@ int print_number(int n)
 		x = x % r;
 		r /= 10;
 		if (x < r)
-		{putchar(k + 48);
+		{_putchar(k + 48);
 			 s += 1;
-			putchar(48);
+			_putchar(48);
 			 s += 1;
 			r /= 10;
 		}
 		else if (n == -2147483648 && k == 7 && r == 0)
-		{putchar(k + 49);
+		{_putchar(k + 49);
 			 s += 1;
 		}
 		else
-		{putchar(k + 48);
+		{_putchar(k + 48);
 			 s += 1;
 		}
 	}
@@ -54,7 +54,7 @@ int print_number(int n)
  */
 int pr_char(char c)
 {
-	putchar(c);
+	_putchar(c);
 	return (1);
 }
 /**
@@ -69,7 +69,7 @@ int pr_string(char *ch)
 	if (ch == NULL)
 		return (0);
 	for (i = 0; ch[i] != '\0'; i++)
-		putchar(ch[i]);
+		_putchar(ch[i]);
 	return (i);
 }
 /**
@@ -88,7 +88,7 @@ int _printf(const char *format, ...)
 	while (format[i])
 	{
 		if (format[i] != '%')
-		{putchar(format[i]);
+		{_putchar(format[i]);
 			length += 1;
 		}
 		else
@@ -114,7 +114,7 @@ int _printf(const char *format, ...)
 				length += print_number(j);
 			}
 			if (format[i + 1] == '%')
-			{putchar('%');
+			{_putchar('%');
 				length += 1;
 			}
 			i++;
