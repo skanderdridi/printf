@@ -5,169 +5,205 @@
  * Return: On success 1.
  * On error, -1 is returned, and errno is set appropriately.
  */
-static void printchar(char **str, int c)
-{
-	extern int putchar(int c);
-	if (str) {
-		**str = c;
-		++(*str);
-	}
-	else (void)putchar(c);
+static void ftoa_fixed(char *buffer, double value);
+static void ftoa_sci(char *buffer, double value);
+
+int my_vfprintf(FILE *file, char const *fmt, va_list arg) {
+
+    int int_temp;
+    char char_temp;
+    char *string_temp;
+    double double_temp;
+
+    char ch;
+    int length = 0;
+
+    char buffer[512];
+
+    while ( ch = *fmt++) {
+        if ( '%' == ch ) {
+            switch (ch = *fmt++) {
+                /* %% - print out a single %    */
+                case '%':
+                    fputc('%', file);
+                    length++;
+                    break;
+
+                /* %c: print out a character    */
+                case 'c':
+                    char_temp = va_arg(arg, int);
+                    fputc(char_temp, file);
+                    length++;
+                    break;
+
+                /* %s: print out a string       */
+                case 's':
+                    string_temp = va_arg(arg, char *);
+                    fputs(string_temp, file);
+                    length += strlen(string_temp);
+                    break;
+
+                /* %d: print out an int         */
+                case 'd':
+                    int_temp = va_arg(arg, int);
+                    itoa(int_temp, buffer, 10);
+                    fputs(buffer, file);
+                    length += strlen(buffer);
+                    break;
+
+                /* %x: print out an int in hex  */
+                case 'x':
+                    int_temp = va_arg(arg, int);
+                    itoa(int_temp, buffer, 16);
+                    fputs(buffer, file);
+                    length += strlen(buffer);
+                    break;
+
+                case 'f':
+                    double_temp = va_arg(arg, double);
+                    ftoa_fixed(buffer, double_temp);
+                    fputs(buffer, file);
+                    length += strlen(buffer);
+                    break;
+
+                case 'e':
+                    double_temp = va_arg(arg, double);
+                    ftoa_sci(buffer, double_temp);
+                    fputs(buffer, file);
+                    length += strlen(buffer);
+                    break;
+            }
+        }
+        else {
+            putc(ch, file);
+            length++;
+        }
+    }
+    return length;
 }
 
-#define PAD_RIGHT 1
-#define PAD_ZERO 2
+int normalize(double *val) {
+    int exponent = 0;
+    double value = *val;
 
-static int prints(char **out, const char *string, int width, int pad)
-{
-	register int pc = 0, padchar = ' ';
+    while (value >= 1.0) {
+        value /= 10.0;
+        ++exponent;
+    }
 
-	if (width > 0) {
-		register int len = 0;
-		register const char *ptr;
-		for (ptr = string; *ptr; ++ptr) ++len;
-		if (len >= width) width = 0;
-		else width -= len;
-		if (pad & PAD_ZERO) padchar = '0';
-	}
-	if (!(pad & PAD_RIGHT)) {
-		for ( ; width > 0; --width) {
-			printchar (out, padchar);
-			++pc;
-		}
-	}
-	for ( ; *string ; ++string) {
-		printchar (out, *string);
-		++pc;
-	}
-	for ( ; width > 0; --width) {
-		printchar (out, padchar);
-		++pc;
-	}
-
-	return pc;
+    while (value < 0.1) {
+        value *= 10.0;
+        --exponent;
+    }
+    *val = value;
+    return exponent;
 }
 
-/* the following should be enough for 32 bit int */
-#define PRINT_BUF_LEN 12
+static void ftoa_fixed(char *buffer, double value) {  
+    /* carry out a fixed conversion of a double value to a string, with a precision of 5 decimal digits. 
+     * Values with absolute values less than 0.000001 are rounded to 0.0
+     * Note: this blindly assumes that the buffer will be large enough to hold the largest possible result.
+     * The largest value we expect is an IEEE 754 double precision real, with maximum magnitude of approximately
+     * e+308. The C standard requires an implementation to allow a single conversion to produce up to 512 
+     * characters, so that's what we really expect as the buffer size.     
+     */
 
-static int printi(char **out, int i, int b, int sg, int width, int pad, int letbase)
-{
-	char print_buf[PRINT_BUF_LEN];
-	register char *s;
-	register int t, neg = 0, pc = 0;
-	register unsigned int u = i;
+    int exponent = 0;
+    int places = 0;
+    static const int width = 4;
 
-	if (i == 0) {
-		print_buf[0] = '0';
-		print_buf[1] = '\0';
-		return prints (out, print_buf, width, pad);
-	}
+    if (value == 0.0) {
+        buffer[0] = '0';
+        buffer[1] = '\0';
+        return;
+    }         
 
-	if (sg && b == 10 && i < 0) {
-		neg = 1;
-		u = -i;
-	}
+    if (value < 0.0) {
+        *buffer++ = '-';
+        value = -value;
+    }
 
-	s = print_buf + PRINT_BUF_LEN-1;
-	*s = '\0';
+    exponent = normalize(&value);
 
-	while (u) {
-		t = u % b;
-		if( t >= 10 )
-			t += letbase - '0' - 10;
-		*--s = t + '0';
-		u /= b;
-	}
+    while (exponent > 0) {
+        int digit = value * 10;
+        *buffer++ = digit + '0';
+        value = value * 10 - digit;
+        ++places;
+        --exponent;
+    }
 
-	if (neg) {
-		if( width && (pad & PAD_ZERO) ) {
-			printchar (out, '-');
-			++pc;
-			--width;
-		}
-		else {
-			*--s = '-';
-		}
-	}
+    if (places == 0)
+        *buffer++ = '0';
 
-	return pc + prints (out, s, width, pad);
+    *buffer++ = '.';
+
+    while (exponent < 0 && places < width) {
+        *buffer++ = '0';
+        --exponent;
+        ++places;
+    }
+
+    while (places < width) {
+        int digit = value * 10.0;
+        *buffer++ = digit + '0';
+        value = value * 10.0 - digit;
+        ++places;
+    }
+    *buffer = '\0';
 }
 
-static int print(char **out, int *varg)
-{
-	register int width, pad;
-	register int pc = 0;
-	register char *format = (char *)(*varg++);
-	char scr[2];
+void ftoa_sci(char *buffer, double value) {
+    int exponent = 0;
+    int places = 0;
+    static const int width = 4;
 
-	for (; *format != 0; ++format) {
-		if (*format == '%') {
-			++format;
-			width = pad = 0;
-			if (*format == '\0') break;
-			if (*format == '%') goto out;
-			if (*format == '-') {
-				++format;
-				pad = PAD_RIGHT;
-			}
-			while (*format == '0') {
-				++format;
-				pad |= PAD_ZERO;
-			}
-			for ( ; *format >= '0' && *format <= '9'; ++format) {
-				width *= 10;
-				width += *format - '0';
-			}
-			if( *format == 's' ) {
-				register char *s = *((char **)varg++);
-				pc += prints (out, s?s:"(null)", width, pad);
-				continue;
-			}
-			if( *format == 'd' ) {
-				pc += printi (out, *varg++, 10, 1, width, pad, 'a');
-				continue;
-			}
-			if( *format == 'x' ) {
-				pc += printi (out, *varg++, 16, 0, width, pad, 'a');
-				continue;
-			}
-			if( *format == 'X' ) {
-				pc += printi (out, *varg++, 16, 0, width, pad, 'A');
-				continue;
-			}
-			if( *format == 'u' ) {
-				pc += printi (out, *varg++, 10, 0, width, pad, 'a');
-				continue;
-			}
-			if( *format == 'c' ) {
-				/* char are converted to int then pushed on the stack */
-				scr[0] = *varg++;
-				scr[1] = '\0';
-				pc += prints (out, scr, width, pad);
-				continue;
-			}
-		}
-		else {
-		out:
-			printchar (out, *format);
-			++pc;
-		}
-	}
-	if (out) **out = '\0';
-	return pc;
+    if (value == 0.0) {
+        buffer[0] = '0';
+        buffer[1] = '\0';
+        return;
+    }
+
+    if (value < 0.0) {
+        *buffer++ = '-';
+        value = -value;
+    }
+
+    exponent = normalize(&value);
+
+    int digit = value * 10.0;
+    *buffer++ = digit + '0';
+    value = value * 10.0 - digit;
+    --exponent;
+
+    *buffer++ = '.';
+
+    for (int i = 0; i < width; i++) {
+        int digit = value * 10.0;
+        *buffer++ = digit + '0';
+        value = value * 10.0 - digit;
+    }
+
+    *buffer++ = 'e';
+    itoa(exponent, buffer, 10);
 }
 
-/* assuming sizeof(void *) == sizeof(int) */
+int my_printf(char const *fmt, ...) {
+    va_list arg;
+    int length;
 
-int printf(const char *format, ...)
-{
-	register int *varg = (int *)(&format);
-	return print(0, varg);
+    va_start(arg, fmt);
+    length = my_vfprintf(stdout, fmt, arg);
+    va_end(arg);
+    return length;
 }
 
-int sprintf(char *out, const char *format, ...)
-{
-	register int *varg = (int *)(&format);
-	return print(&out, varg);
+int my_fprintf(FILE *file, char const *fmt, ...) {
+    va_list arg;
+    int length;
+
+    va_start(arg, fmt);
+    length = my_vfprintf(file, fmt, arg);
+    va_end(arg);
+    return length;
 }
